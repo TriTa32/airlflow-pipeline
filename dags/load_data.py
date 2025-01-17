@@ -6,8 +6,12 @@ from datetime import datetime, timedelta
 import logging
 import json
 import requests
+import os
 
 logger = logging.getLogger(__name__)
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SPEC_FILE = os.path.join(PROJECT_ROOT, 'wikipedia-index.json')
 
 def check_druid_connection(druid_conn_id: str = 'druid_default') -> None:
     conn = BaseHook.get_connection(druid_conn_id)
@@ -20,6 +24,9 @@ def check_druid_connection(druid_conn_id: str = 'druid_default') -> None:
 
 def validate_spec(json_index_file: str) -> None:
     try:
+        if not os.path.exists(json_index_file):
+            raise FileNotFoundError(f"Spec file not found at: {json_index_file}")
+            
         with open(json_index_file, 'r') as f:
             spec = json.load(f)
             if not all(field in spec for field in ['spec', 'type']):
@@ -64,12 +71,12 @@ with DAG(
     validate_ingestion = PythonOperator(
         task_id='validate_ingestion',
         python_callable=validate_spec,
-        op_kwargs={'json_index_file': 'wikipedia-index.json'}
+        op_kwargs={'json_index_file': SPEC_FILE}
     )
 
     ingest_data = DruidOperator(
         task_id='druid_ingest',
-        json_index_file='wikipedia-index.json',
+        json_index_file=SPEC_FILE,
         druid_ingest_conn_id='druid_default',
         timeout=14400  # 4 hours
     )
