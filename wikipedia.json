@@ -1,0 +1,264 @@
+{
+  "type": "index_parallel",
+  "id": "index_parallel_wikipedia_iklfccmh_2025-01-16T07:50:54.382Z",
+  "groupId": "index_parallel_wikipedia_iklfccmh_2025-01-16T07:50:54.382Z",
+  "resource": {
+    "availabilityGroup": "index_parallel_wikipedia_iklfccmh_2025-01-16T07:50:54.382Z",
+    "requiredCapacity": 1
+  },
+  "spec": {
+    "dataSchema": {
+      "dataSource": "wikipedia",
+      "timestampSpec": {
+        "column": "timestamp",
+        "format": "iso",
+        "missingValue": null
+      },
+      "dimensionsSpec": {
+        "dimensions": [
+          {
+            "type": "string",
+            "name": "isRobot",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "channel",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "flags",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "isUnpatrolled",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "page",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "diffUrl",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "long",
+            "name": "added",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": false
+          },
+          {
+            "type": "string",
+            "name": "comment",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "long",
+            "name": "commentLength",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": false
+          },
+          {
+            "type": "string",
+            "name": "isNew",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "isMinor",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "long",
+            "name": "delta",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": false
+          },
+          {
+            "type": "string",
+            "name": "isAnonymous",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "user",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "long",
+            "name": "deltaBucket",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": false
+          },
+          {
+            "type": "long",
+            "name": "deleted",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": false
+          },
+          {
+            "type": "string",
+            "name": "namespace",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "cityName",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "countryName",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "regionIsoCode",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "metroCode",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "countryIsoCode",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          },
+          {
+            "type": "string",
+            "name": "regionName",
+            "multiValueHandling": "SORTED_ARRAY",
+            "createBitmapIndex": true
+          }
+        ],
+        "dimensionExclusions": [
+          "__time",
+          "timestamp"
+        ],
+        "includeAllDimensions": false,
+        "useSchemaDiscovery": false
+      },
+      "metricsSpec": [],
+      "granularitySpec": {
+        "type": "uniform",
+        "segmentGranularity": "DAY",
+        "queryGranularity": {
+          "type": "none"
+        },
+        "rollup": false,
+        "intervals": []
+      },
+      "transformSpec": {
+        "filter": null,
+        "transforms": []
+      }
+    },
+    "ioConfig": {
+      "type": "index_parallel",
+      "inputSource": {
+        "type": "http",
+        "uris": [
+          "https://druid.apache.org/data/wikipedia.json.gz"
+        ]
+      },
+      "inputFormat": {
+        "type": "json",
+        "keepNullColumns": false,
+        "assumeNewlineDelimited": false,
+        "useJsonNodeReader": false
+      },
+      "appendToExisting": false,
+      "dropExisting": false
+    },
+    "tuningConfig": {
+      "type": "index_parallel",
+      "maxRowsPerSegment": 5000000,
+      "appendableIndexSpec": {
+        "type": "onheap",
+        "preserveExistingMetrics": false
+      },
+      "maxRowsInMemory": 1000000,
+      "maxBytesInMemory": 0,
+      "skipBytesInMemoryOverheadCheck": false,
+      "maxTotalRows": null,
+      "numShards": null,
+      "splitHintSpec": null,
+      "partitionsSpec": {
+        "type": "dynamic",
+        "maxRowsPerSegment": 5000000,
+        "maxTotalRows": null
+      },
+      "indexSpec": {
+        "bitmap": {
+          "type": "roaring"
+        },
+        "dimensionCompression": "lz4",
+        "stringDictionaryEncoding": {
+          "type": "utf8"
+        },
+        "metricCompression": "lz4",
+        "longEncoding": "longs"
+      },
+      "indexSpecForIntermediatePersists": {
+        "bitmap": {
+          "type": "roaring"
+        },
+        "dimensionCompression": "lz4",
+        "stringDictionaryEncoding": {
+          "type": "utf8"
+        },
+        "metricCompression": "lz4",
+        "longEncoding": "longs"
+      },
+      "maxPendingPersists": 0,
+      "forceGuaranteedRollup": false,
+      "reportParseExceptions": false,
+      "pushTimeout": 0,
+      "segmentWriteOutMediumFactory": null,
+      "maxNumConcurrentSubTasks": 1,
+      "maxRetry": 3,
+      "taskStatusCheckPeriodMs": 1000,
+      "chatHandlerTimeout": "PT10S",
+      "chatHandlerNumRetries": 5,
+      "maxNumSegmentsToMerge": 100,
+      "totalNumMergeTasks": 10,
+      "logParseExceptions": false,
+      "maxParseExceptions": 2147483647,
+      "maxSavedParseExceptions": 0,
+      "maxColumnsToMerge": -1,
+      "awaitSegmentAvailabilityTimeoutMillis": 0,
+      "maxAllowedLockCount": -1,
+      "numPersistThreads": 1,
+      "partitionDimensions": []
+    }
+  },
+  "context": {
+    "forceTimeChunkLock": true,
+    "useLineageBasedSegmentAllocation": true
+  },
+  "dataSource": "wikipedia"
+}
