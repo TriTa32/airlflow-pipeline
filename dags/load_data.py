@@ -10,8 +10,8 @@ import os
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SPEC_FILE = os.path.join(PROJECT_ROOT, 'wikipedia-index.json')
+DAG_DIR = os.path.dirname(os.path.abspath(__file__))
+SPEC_FILE = os.path.join(DAG_DIR, 'spec_file', 'wikipedia-index.json')
 
 def check_druid_connection(druid_conn_id: str = 'druid_default') -> None:
     conn = BaseHook.get_connection(druid_conn_id)
@@ -31,7 +31,7 @@ def validate_spec(json_index_file: str) -> None:
             spec = json.load(f)
             if not all(field in spec for field in ['spec', 'type']):
                 raise ValueError("Missing required fields in spec")
-        logger.info("Spec validation successful")
+            logger.info(f"Spec file found and validated at: {json_index_file}")
     except Exception as e:
         logger.error(f"Spec validation failed: {str(e)}")
         raise
@@ -59,7 +59,8 @@ with DAG(
     schedule_interval=None,
     start_date=datetime(2025, 1, 1),
     catchup=False,
-    tags=['druid']
+    tags=['druid'],
+    template_searchpath=[os.path.join(DAG_DIR, 'spec_file')] 
 ) as dag:
 
     check_connection = PythonOperator(
@@ -76,7 +77,7 @@ with DAG(
 
     ingest_data = DruidOperator(
         task_id='druid_ingest',
-        json_index_file=f"/opt/airflow/dags/repo/wikipedia-index.json ",
+        json_index_file='wikipedia-index.json',
         druid_ingest_conn_id='druid_default',
         timeout=14400  # 4 hours
     )
@@ -87,4 +88,4 @@ with DAG(
         provide_context=True
     )
 
-    check_connection >> ingest_data >> check_status
+    check_connection >> validate_ingestion >> ingest_data >> check_status
