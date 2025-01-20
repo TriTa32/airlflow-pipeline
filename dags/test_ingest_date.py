@@ -1,59 +1,54 @@
 from airflow import DAG
 from airflow.providers.apache.druid.operators.druid import DruidOperator
+from airflow.providers.apache.druid.hooks.druid import DruidHook
 from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
-import os
-import requests
-
-REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SPEC_FILE = os.path.join(REPO_PATH, 'druid-ingestion-spec.json')
-
-OVERLORD_URL = "http://druid-overlord.superset-prod.svc.cluster.local:8081/status"
+from datetime import datetime
 
 default_args = {
-    "owner": "airflow",
-    "depends_on_past": False,
-    "email_on_failure": False,
-    "email_on_retry": False,
-    "retries": 1,
-    "retry_delay": timedelta(minutes=5),
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
 }
 
-def verify_overlord():
+def debug_druid_submission(**kwargs):
+    hook = DruidHook(druid_ingest_conn_id='druid_ingest_default')
+    
+    ingestion_spec_path = '/opt/airflow/dags/repo/druid-ingestion-spec.json'
+    
+    print(f"Submitting ingestion spec: {ingestion_spec_path}")
+    
+    # Submit the job and log the response
     try:
-        response = requests.get(OVERLORD_URL, timeout=10)
-        response.raise_for_status()
-        status = response.json()
-        if 'version' in status and 'modules' in status:
-            print(f"Druid Overlord is active. Version: {status['version']}")
-        else:
-            raise ValueError("Unexpected Overlord status response.")
+        response = hook.submit_indexing_job(json_index_file=ingestion_spec_path)
+        print(f"Druid Overlord API Response: {response.text}")
+        return response.text
     except Exception as e:
-        raise RuntimeError(f"Failed to verify Druid Overlord: {e}")
+        print(f"Error during Druid job submission: {e}")
+        raise
 
-# Define the DAG
+# Define DAG
 with DAG(
-    "druid_ingestion_operator_with_verification",
+    dag_id='druid_ingestion_operator_with_verification',
     default_args=default_args,
-    description="DAG to verify Druid Overlord and ingest data using DruidOperator",
+    description='DAG for ingesting data into Druid with debugging',
     schedule_interval=None,
-    start_date=datetime(2024, 1, 1),
-    template_searchpath=[REPO_PATH],
+    start_date=datetime(2023, 1, 1),
     catchup=False,
 ) as dag:
 
-    verify_overlord_task = PythonOperator(
-        task_id="verify_overlord",
-        python_callable=verify_overlord,
-    )
-
     ingest_data_to_druid = DruidOperator(
-        task_id="ingest_data_to_druid",
-        json_index_file="druid-ingestion-spec.json",
-        druid_ingest_conn_id="druid_default",
-        do_xcom_push=True,
-        on_failure_callback=lambda context: print(f"Task failed with context: {context}")
+        task_id='ingest_data_to_druid',
+        json_index_file='/opt/airflow/dags/repo/druid-ingestion-spec.json',
+        druid_ingest_conn_id='druid_ingest_default',
+        do_xcom_push=False,
     )
 
-    # Task dependencies
-    verify_overlord_task >> ingest_data_to_druid
+    debug_druid_task = PythonOperator(
+        task_id='debug_druid_submission',
+        python_callable=debug_druid_submission,
+        provide_context=True,
+    )
+
+    debug_druid_task >> ingest_data_to_druid
