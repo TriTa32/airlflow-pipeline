@@ -12,7 +12,7 @@ default_args = {
     'email_on_retry': False,
     'retries': 1,
 }
-
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 def debug_druid_submission(**kwargs):
     hook = DruidHook(druid_ingest_conn_id='druid_default')
     
@@ -42,6 +42,7 @@ with DAG(
     default_args=default_args,
     description='DAG for ingesting data into Druid with debugging',
     schedule_interval=None,
+    template_searchpath=[REPO_PATH],
     start_date=datetime(2023, 1, 1),
     catchup=False,
 ) as dag:
@@ -51,10 +52,10 @@ with DAG(
         json_index_file='/opt/airflow/dags/repo/druid-ingestion-spec.json',
     )
 
-    debug_druid_task = PythonOperator(
-        task_id='debug_druid_submission',
-        python_callable=debug_druid_submission,
-        provide_context=True,
-    )
+    # debug_druid_task = PythonOperator(
+    #     task_id='debug_druid_submission',
+    #     python_callable=debug_druid_submission,
+    #     provide_context=True,
+    # )
 
     ingest_data_to_druid
