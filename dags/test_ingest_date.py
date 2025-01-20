@@ -4,6 +4,7 @@ from airflow.providers.apache.druid.hooks.druid import DruidHook
 from airflow.operators.python import PythonOperator
 from datetime import datetime
 import json
+import os 
 
 default_args = {
     'owner': 'airflow',
@@ -38,7 +39,7 @@ def debug_druid_submission(**kwargs):
 
 # Define DAG
 with DAG(
-    dag_id='druid_ingestion_operator_test',
+    dag_id='druid_ingestion_operator',
     default_args=default_args,
     description='DAG for ingesting data into Druid with debugging',
     schedule_interval=None,
