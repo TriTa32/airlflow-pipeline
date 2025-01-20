@@ -1,32 +1,31 @@
 {
-    "type": "index_parallel",
-    "spec": {
-      "dataSchema": {
-        "dataSource": "sample_data_source",
-        "timestampSpec": {
-          "column": "timestamp",
-          "format": "auto"
-        },
-        "dimensionsSpec": {
-          "dimensions": ["field1", "field2", "field3"]
-        }
+  "type": "index_parallel",
+  "spec": {
+    "dataSchema": {
+      "dataSource": "sample_data_source",
+      "timestampSpec": {
+        "column": "timestamp",
+        "format": "auto"
       },
-      "ioConfig": {
-        "type": "index_parallel",
-        "inputSource": {
-          "type": "local",
-          "baseDir": "/opt/airflow/dags/repo",
-          "filter": "sample_data.json"
-        },
-        "inputFormat": {
-          "type": "json"
-        }
-      },
-      "tuningConfig": {
-        "type": "index_parallel",
-        "maxRowsInMemory": 500000,
-        "maxBytesInMemory": 512000000
+      "dimensionsSpec": {
+        "dimensions": ["field1", "field2", "field3"]
       }
+    },
+    "ioConfig": {
+      "type": "index_parallel",
+      "inputSource": {
+        "type": "local",
+        "baseDir": "/opt/airflow/dags/repo",
+        "filter": "sample_data.json"
+      },
+      "inputFormat": {
+        "type": "json"
+      }
+    },
+    "tuningConfig": {
+      "type": "index_parallel",
+      "maxRowsInMemory": 500000,
+      "maxBytesInMemory": 512000000
     }
   }
-  
+}
