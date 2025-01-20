@@ -1,5 +1,6 @@
 {
   "type": "index_parallel",
+  "datasource": "datasource_prd",
   "spec": {
     "dataSchema": {
       "dataSource": "sample_data_source",
