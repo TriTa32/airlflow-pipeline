@@ -39,7 +39,7 @@ def debug_druid_submission(**kwargs):
 
 # Define DAG
 with DAG(
-    dag_id='druid_ingestion_operator',
+    dag_id='druid_ingestion_operator_test',
     default_args=default_args,
     description='DAG for ingesting data into Druid with debugging',
     schedule_interval=None,
