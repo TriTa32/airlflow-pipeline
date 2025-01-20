@@ -11,7 +11,7 @@ import os
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SPEC_FILE = os.path.join(PROJECT_ROOT, 'wikipedia-index.json ')
+SPEC_FILE = os.path.join(PROJECT_ROOT, 'wikipedia-index.json')
 
 def check_druid_connection(druid_conn_id: str = 'druid_default') -> None:
     conn = BaseHook.get_connection(druid_conn_id)
@@ -76,7 +76,7 @@ with DAG(
 
     ingest_data = DruidOperator(
         task_id='druid_ingest',
-        json_index_file=SPEC_FILE,
+        json_index_file=f"/opt/airflow/dags/repo/wikipedia-index.json ",
         druid_ingest_conn_id='druid_default',
         timeout=14400  # 4 hours
     )
@@ -87,4 +87,4 @@ with DAG(
         provide_context=True
     )
 
-    check_connection >> validate_ingestion >> ingest_data >> check_status
+    check_connection >> ingest_data >> check_status
