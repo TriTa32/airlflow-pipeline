@@ -3,6 +3,7 @@ from airflow.providers.apache.druid.operators.druid import DruidOperator
 from airflow.providers.apache.druid.hooks.druid import DruidHook
 from airflow.operators.python import PythonOperator
 from datetime import datetime
+import json
 
 default_args = {
     'owner': 'airflow',
@@ -17,11 +18,18 @@ def debug_druid_submission(**kwargs):
     
     ingestion_spec_path = '/opt/airflow/dags/repo/druid-ingestion-spec.json'
     
-    print(f"Submitting ingestion spec: {ingestion_spec_path}")
+    print(f"Submitting ingestion spec from file: {ingestion_spec_path}")
     
-    # Submit the job and log the response
     try:
-        response = hook.submit_indexing_job(json_index_file=ingestion_spec_path)
+        with open(ingestion_spec_path, 'r') as f:
+            ingestion_spec = json.load(f)
+        print(f"Ingestion spec loaded successfully: {ingestion_spec}")
+    except Exception as e:
+        print(f"Error reading ingestion spec file: {e}")
+        raise
+
+    try:
+        response = hook.submit_indexing_job(ingestion_spec)
         print(f"Druid Overlord API Response: {response.text}")
         return response.text
     except Exception as e:
