@@ -10,8 +10,8 @@ import os
 
 logger = logging.getLogger(__name__)
 
-DAG_DIR = os.path.dirname(os.path.abspath(__file__))
-SPEC_FILE = os.path.join(DAG_DIR, 'spec_file', 'wikipedia-index.json')
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SPEC_FILE = os.path.join(REPO_PATH, 'wikipedia-index.json')
 
 def check_druid_connection(druid_conn_id: str = 'druid_default') -> None:
     conn = BaseHook.get_connection(druid_conn_id)
@@ -60,7 +60,7 @@ with DAG(
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=['druid'],
-    template_searchpath=[os.path.join(DAG_DIR, 'spec_file')] 
+    template_searchpath=[REPO_PATH]
 ) as dag:
 
     check_connection = PythonOperator(
