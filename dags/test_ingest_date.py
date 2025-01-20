@@ -1,8 +1,11 @@
 from airflow import DAG
 from airflow.providers.apache.druid.operators.druid import DruidOperator
 from datetime import datetime, timedelta
+import os
 
-# Default arguments for the DAG
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SPEC_FILE = os.path.join(REPO_PATH, 'druid-ingestion-spec.json')
+
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
@@ -17,8 +20,9 @@ with DAG(
     "druid_ingestion_operator_test",
     default_args=default_args,
     description="DAG to ingest data into Druid using DruidOperator",
-    schedule_interval=None,  # Manual trigger
+    schedule_interval=None,
     start_date=datetime(2024, 1, 1),
+    template_searchpath=[REPO_PATH],
     catchup=False,
 ) as dag:
 
