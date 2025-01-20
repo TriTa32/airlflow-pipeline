@@ -50,7 +50,7 @@ with DAG(
 
     ingest_data_to_druid = DruidOperator(
         task_id='ingest_data_to_druid',
-        json_index_file='/opt/airflow/dags/repo/druid-ingestion-spec.json',
+        json_index_file='druid-ingestion-spec.json',
     )
 
     # debug_druid_task = PythonOperator(
