@@ -1,0 +1,21 @@
+[
+    {
+      "timestamp": "2025-01-01T00:00:00Z",
+      "field1": "value1",
+      "field2": 123,
+      "field3": 45.67
+    },
+    {
+      "timestamp": "2025-01-02T12:34:56Z",
+      "field1": "value2",
+      "field2": 456,
+      "field3": 89.10
+    },
+    {
+      "timestamp": "2025-01-03T23:45:01Z",
+      "field1": "value3",
+      "field2": 789,
+      "field3": 12.34
+    }
+  ]
+  

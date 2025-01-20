@@ -15,8 +15,8 @@
         "type": "index_parallel",
         "inputSource": {
           "type": "local",
-          "baseDir": "/path/to/sample-data",
-          "filter": "*.json"
+          "baseDir": "/opt/airflow/dags/repo",
+          "filter": "sample_data.json"
         },
         "inputFormat": {
           "type": "json"
