@@ -8,6 +8,8 @@ import requests
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 SPEC_FILE = os.path.join(REPO_PATH, 'druid-ingestion-spec.json')
 
+OVERLORD_URL = "http://druid-overlord.superset-prod.svc.cluster.local:8081/status"
+
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
@@ -17,31 +19,32 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
-def verify_overlord_status():
-    """Verify the Druid Overlord status before submitting the ingestion spec."""
-    druid_overlord_url = "http://druid-overlord.superset-prod.svc.cluster.local:8081/status"  
+def verify_overlord():
     try:
-        response = requests.get(druid_overlord_url, timeout=10)
+        response = requests.get(OVERLORD_URL, timeout=10)
         response.raise_for_status()
         status = response.json()
-        print("Druid Overlord status:", status)
-    except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"Failed to connect to Druid Overlord: {e}")
+        if 'version' in status and 'modules' in status:
+            print(f"Druid Overlord is active. Version: {status['version']}")
+        else:
+            raise ValueError("Unexpected Overlord status response.")
+    except Exception as e:
+        raise RuntimeError(f"Failed to verify Druid Overlord: {e}")
 
 # Define the DAG
 with DAG(
-    "druid_ingestion_operator_test",
+    "druid_ingestion_operator_with_verification",
     default_args=default_args,
-    description="DAG to ingest data into Druid using DruidOperator",
+    description="DAG to verify Druid Overlord and ingest data using DruidOperator",
     schedule_interval=None,
     start_date=datetime(2024, 1, 1),
     template_searchpath=[REPO_PATH],
     catchup=False,
 ) as dag:
 
-    verify_overlord = PythonOperator(
+    verify_overlord_task = PythonOperator(
         task_id="verify_overlord",
-        python_callable=verify_overlord_status
+        python_callable=verify_overlord,
     )
 
     ingest_data_to_druid = DruidOperator(
@@ -51,4 +54,5 @@ with DAG(
         do_xcom_push=True
     )
 
-    verify_overlord >> ingest_data_to_druid
+    # Task dependencies
+    verify_overlord_task >> ingest_data_to_druid
