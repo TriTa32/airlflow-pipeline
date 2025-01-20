@@ -1,9 +1,6 @@
 {
   "type": "index_parallel",
-  "id": "index_parallel_wikipedia_iklfccmh_2025-01-16T07:50:54.382Z",
-  "groupId": "index_parallel_wikipedia_iklfccmh_2025-01-16T07:50:54.382Z",
   "resource": {
-    "availabilityGroup": "index_parallel_wikipedia_iklfccmh_2025-01-16T07:50:54.382Z",
     "requiredCapacity": 1
   },
   "spec": {
