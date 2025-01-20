@@ -11,7 +11,7 @@ import os
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SPEC_FILE = os.path.join(PROJECT_ROOT, 'wikipedia-index.json')
+SPEC_FILE = os.path.join(PROJECT_ROOT, 'wikipedia-index.json ')
 
 def check_druid_connection(druid_conn_id: str = 'druid_default') -> None:
     conn = BaseHook.get_connection(druid_conn_id)
