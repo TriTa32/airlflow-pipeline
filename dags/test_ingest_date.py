@@ -14,7 +14,7 @@ default_args = {
 }
 
 def debug_druid_submission(**kwargs):
-    hook = DruidHook(druid_ingest_conn_id='druid_ingest_default')
+    hook = DruidHook(druid_ingest_conn_id='druid_default')
     
     ingestion_spec_path = '/opt/airflow/dags/repo/druid-ingestion-spec.json'
     
@@ -38,7 +38,7 @@ def debug_druid_submission(**kwargs):
 
 # Define DAG
 with DAG(
-    dag_id='druid_ingestion_operator_with_verification',
+    dag_id='druid_ingestion_operator',
     default_args=default_args,
     description='DAG for ingesting data into Druid with debugging',
     schedule_interval=None,
@@ -49,7 +49,7 @@ with DAG(
     ingest_data_to_druid = DruidOperator(
         task_id='ingest_data_to_druid',
         json_index_file='/opt/airflow/dags/repo/druid-ingestion-spec.json',
-        druid_ingest_conn_id='druid_ingest_default',
+        druid_ingest_conn_id='druid_default',
         do_xcom_push=False,
     )
 
