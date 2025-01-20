@@ -1,32 +1,11 @@
 {
-  "type": "index_parallel",
+  "type": "index_hadoop",
   "datasource": "datasource_prd",
   "spec": {
-    "dataSchema": {
-      "dataSource": "sample_data_source",
-      "timestampSpec": {
-        "column": "timestamp",
-        "format": "auto"
-      },
-      "dimensionsSpec": {
-        "dimensions": ["field1", "field2", "field3"]
+      "dataSchema": {
+          "granularitySpec": {
+              "intervals": ["2021-09-01/2021-09-02"]
+          }
       }
-    },
-    "ioConfig": {
-      "type": "index_parallel",
-      "inputSource": {
-        "type": "local",
-        "baseDir": "/opt/airflow/dags/repo",
-        "filter": "sample_data.json"
-      },
-      "inputFormat": {
-        "type": "json"
-      }
-    },
-    "tuningConfig": {
-      "type": "index_parallel",
-      "maxRowsInMemory": 500000,
-      "maxBytesInMemory": 512000000
-    }
   }
 }
