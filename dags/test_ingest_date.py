@@ -51,7 +51,8 @@ with DAG(
         task_id="ingest_data_to_druid",
         json_index_file="druid-ingestion-spec.json",
         druid_ingest_conn_id="druid_default",
-        do_xcom_push=True
+        do_xcom_push=True,
+        on_failure_callback=lambda context: print(f"Task failed with context: {context}")
     )
 
     # Task dependencies
