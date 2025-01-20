@@ -14,28 +14,28 @@ default_args = {
     'retries': 1,
 }
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-def debug_druid_submission(**kwargs):
-    hook = DruidHook(druid_ingest_conn_id='druid_default')
+# def debug_druid_submission(**kwargs):
+#     hook = DruidHook(druid_ingest_conn_id='druid_default')
     
-    ingestion_spec_path = '/opt/airflow/dags/repo/druid-ingestion-spec.json'
+#     ingestion_spec_path = '/opt/airflow/dags/repo/druid-ingestion-spec.json'
     
-    print(f"Submitting ingestion spec from file: {ingestion_spec_path}")
+#     print(f"Submitting ingestion spec from file: {ingestion_spec_path}")
     
-    try:
-        with open(ingestion_spec_path, 'r') as f:
-            ingestion_spec = json.load(f)
-        print(f"Ingestion spec loaded successfully: {ingestion_spec}")
-    except Exception as e:
-        print(f"Error reading ingestion spec file: {e}")
-        raise
+#     try:
+#         with open(ingestion_spec_path, 'r') as f:
+#             ingestion_spec = json.load(f)
+#         print(f"Ingestion spec loaded successfully: {ingestion_spec}")
+#     except Exception as e:
+#         print(f"Error reading ingestion spec file: {e}")
+#         raise
 
-    try:
-        response = hook.submit_indexing_job(ingestion_spec)
-        print(f"Druid Overlord API Response: {response.text}")
-        return response.text
-    except Exception as e:
-        print(f"Error during Druid job submission: {e}")
-        raise
+#     try:
+#         response = hook.submit_indexing_job(ingestion_spec)
+#         print(f"Druid Overlord API Response: {response.text}")
+#         return response.text
+#     except Exception as e:
+#         print(f"Error during Druid job submission: {e}")
+#         raise
 
 # Define DAG
 with DAG(
