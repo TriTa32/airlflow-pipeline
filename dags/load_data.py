@@ -79,7 +79,6 @@ with DAG(
         task_id='druid_ingest',
         json_index_file='wikipedia-index.json',
         druid_ingest_conn_id='druid_default',
-        timeout=14400  # 4 hours
     )
 
     check_status = PythonOperator(

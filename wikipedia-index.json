@@ -1,6 +1,7 @@
 {
   "type": "index_parallel",
   "resource": {
+    "availabilityGroup": "wikipedia-index-task",
     "requiredCapacity": 1
   },
   "spec": {
