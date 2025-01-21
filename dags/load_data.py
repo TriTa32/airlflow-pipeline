@@ -50,7 +50,7 @@ def monitor_status(**context) -> None:
     logger.info(f"Ingestion completed successfully. Processed: {status.get('processedRows', 0)} rows")
 
 with DAG(
-    'druid-ingest-monitored-test',
+    'druid-ingest-monitored',
     default_args={
         'owner': 'airflow',
         'retries': 1,
@@ -81,10 +81,10 @@ with DAG(
         druid_ingest_conn_id='druid_default',
     )
 
-    check_status = PythonOperator(
-        task_id='check_status',
-        python_callable=monitor_status,
-        provide_context=True
-    )
+    # check_status = PythonOperator(
+    #     task_id='check_status',
+    #     python_callable=monitor_status,
+    #     provide_context=True
+    # )
 
-    check_connection >> validate_ingestion >> ingest_data >> check_status
+    check_connection >> validate_ingestion >> ingest_data
