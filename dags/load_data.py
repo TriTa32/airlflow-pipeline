@@ -94,14 +94,12 @@ with DAG(
         json_index_file='sat_employee_index.json',
         druid_ingest_conn_id='druid_default',
         max_ingestion_time=3600,  # Maximum time to wait for ingestion (in seconds)
-        dag=dag
     )
 
     log_completion = PythonOperator(
         task_id='log_completion',
         python_callable=log_ingestion_status,
         provide_context=True,
-        dag=dag
     )
 
     cleanup_task = PythonOperator(
@@ -109,7 +107,6 @@ with DAG(
         python_callable=cleanup_temp_file,
         provide_context=True,
         trigger_rule='all_success',  # Run even if previous tasks succeeded
-        dag=dag
     )
 
     # Define task dependencies
