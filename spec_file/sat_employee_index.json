@@ -32,7 +32,7 @@
             "inputSource": {
                 "type": "local",
                 "baseDir": "/tmp",
-                "filter": "users_data_*.json"
+                "filter": "employees_data_*.json"
             },
             "inputFormat": {
                 "type": "json"
@@ -42,8 +42,7 @@
             "type": "index_parallel",
             "partitionsSpec": {
                 "type": "dynamic"
-            },
-            "forceGuaranteedRollup": true
+            }
         }
     }
 }

@@ -38,7 +38,7 @@ def extract_data_from_postgres(**context):
         df['load_datetime'] = pd.to_datetime(df['load_datetime'])
         
         # Save to temporary file for Druid ingestion
-        temp_file = f"/tmp/users_data_{context['execution_date'].strftime('%Y%m%d')}.json"
+        temp_file = f"/tmp/employees_data_{context['execution_date'].strftime('%Y%m%d')}.json"
         
         # Convert DataFrame to Druid-compatible JSON format
         records = df.to_dict('records')
