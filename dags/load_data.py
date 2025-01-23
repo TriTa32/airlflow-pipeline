@@ -21,10 +21,6 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-# Initialize the DAG
-dag = DAG(
-    
-)
 
 def extract_data_from_postgres(**context):
     pg_hook = PostgresHook(postgres_conn_id='postgres_default')
