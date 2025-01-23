@@ -28,7 +28,7 @@ with DAG(
     dag_id="pipeline_health_check",
     default_args=default_args,
     description="A DAG to check the pipeline running success",
-    schedule_interval=None,  # Runs daily
+    schedule_interval=None,
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=["example", "pipeline-check"],
