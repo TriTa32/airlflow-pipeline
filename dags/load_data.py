@@ -35,8 +35,7 @@ def extract_data_from_postgres(**context):
         df = pg_hook.get_pandas_df(sql_query)
         
         # Process timestamps
-        df['created_at'] = pd.to_datetime(df['created_at'])
-        df['last_login'] = pd.to_datetime(df['last_login'])
+        df['load_datetime'] = pd.to_datetime(df['load_datetime'])
         
         # Save to temporary file for Druid ingestion
         temp_file = f"/tmp/users_data_{context['execution_date'].strftime('%Y%m%d')}.json"
@@ -45,8 +44,7 @@ def extract_data_from_postgres(**context):
         records = df.to_dict('records')
         with open(temp_file, 'w') as f:
             for record in records:
-                record['created_at'] = record['created_at'].isoformat()
-                record['last_login'] = record['last_login'].isoformat() if pd.notnull(record['last_login']) else None
+                record['load_datetime'] = record['load_datetime'].isoformat()
                 f.write(json.dumps(record) + '\n')
         
         # Store the file path and record count in XCom
