@@ -34,7 +34,6 @@ def extract_data_from_postgres(**context):
     try:
         df = pg_hook.get_pandas_df(sql_query)
         
-        # Process timestamps
         df['load_datetime'] = pd.to_datetime(df['load_datetime'])
         
         # Save to temporary file for Druid ingestion
@@ -106,13 +105,13 @@ with DAG(
         dag=dag
     )
 
-    cleanup_task = PythonOperator(
-        task_id='cleanup_temp_file',
-        python_callable=cleanup_temp_file,
-        provide_context=True,
-        trigger_rule='all_success',  # Run even if previous tasks succeeded
-        dag=dag
-    )
+    # cleanup_task = PythonOperator(
+    #     task_id='cleanup_temp_file',
+    #     python_callable=cleanup_temp_file,
+    #     provide_context=True,
+    #     trigger_rule='all_success',  # Run even if previous tasks succeeded
+    #     dag=dag
+    # )
 
     # Define task dependencies
-    extract_data >> ingest_to_druid >> log_completion >> cleanup_task
+    extract_data >> ingest_to_druid >> log_completion
