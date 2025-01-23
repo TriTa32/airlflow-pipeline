@@ -80,7 +80,7 @@ with DAG(
         dag_id='postgres_to_druid_pipeline',
         default_args=default_args,
         description='Extract data from PostgreSQL and ingest into Druid using DruidOperator',
-        schedule_interval='None', 
+        schedule_interval=None, 
         catchup=False,
         # template_searchpath=[SPEC_PATH]
     ) as dag:
