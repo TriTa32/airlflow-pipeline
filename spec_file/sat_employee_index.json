@@ -1,0 +1,49 @@
+{
+    "type": "index_parallel",
+    "spec": {
+        "dataSchema": {
+            "dataSource": "sat_employee",
+            "timestampSpec": {
+                "column": "load_datetime",
+                "format": "iso"
+            },
+            "dimensionsSpec": {
+                "dimensions": [
+                    "load_datetime",
+                    "hub_employee_hk",
+                    "record_source",
+                    "hash_diff",
+                    "employee_account",
+                    "employee_name",
+                    "employee_email",
+                    "sat_employee_hk",
+                    "employee_location"
+                ]
+            },
+            "granularitySpec": {
+                "type": "uniform",
+                "segmentGranularity": "DAY",
+                "queryGranularity": "HOUR",
+                "rollup": true
+            }
+        },
+        "ioConfig": {
+            "type": "index_parallel",
+            "inputSource": {
+                "type": "local",
+                "baseDir": "/tmp",
+                "filter": "users_data_*.json"
+            },
+            "inputFormat": {
+                "type": "json"
+            }
+        },
+        "tuningConfig": {
+            "type": "index_parallel",
+            "partitionsSpec": {
+                "type": "dynamic"
+            },
+            "forceGuaranteedRollup": true
+        }
+    }
+}

@@ -20,8 +20,8 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(minutes=5)
 }
-SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-
+SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../spec_file'))
+print(SPEC_PATH)
 def extract_data_from_postgres(**context):
     pg_hook = PostgresHook(postgres_conn_id='postgres_default')
     
@@ -81,8 +81,7 @@ with DAG(
         schedule_interval=None, 
         catchup=False,
         tags=["postgres", "druid"],
-
-        # template_searchpath=[SPEC_PATH]
+        template_searchpath=[SPEC_PATH]
     ) as dag:
 
     # Define tasks
@@ -92,27 +91,28 @@ with DAG(
         provide_context=True,
     )
 
-    # ingest_to_druid = DruidOperator(
-    #     task_id='ingest_to_druid',
-    #     json_index_file='sat_employee_index.json',
-    #     druid_ingest_conn_id='druid_ingest_default',
-    #     max_ingestion_time=3600,  # Maximum time to wait for ingestion (in seconds)
-    #     dag=dag
-    # )
+    ingest_to_druid = DruidOperator(
+        task_id='ingest_to_druid',
+        json_index_file='sat_employee_index.json',
+        druid_ingest_conn_id='druid_default',
+        max_ingestion_time=3600,  # Maximum time to wait for ingestion (in seconds)
+        dag=dag
+    )
 
-    # log_completion = PythonOperator(
-    #     task_id='log_completion',
-    #     python_callable=log_ingestion_status,
-    #     provide_context=True,
-    #     dag=dag
-    # )
-    # cleanup_task = PythonOperator(
-    #     task_id='cleanup_temp_file',
-    #     python_callable=cleanup_temp_file,
-    #     provide_context=True,
-    #     trigger_rule='all_success',  # Run even if previous tasks succeeded
-    #     dag=dag
-    # )
+    log_completion = PythonOperator(
+        task_id='log_completion',
+        python_callable=log_ingestion_status,
+        provide_context=True,
+        dag=dag
+    )
+
+    cleanup_task = PythonOperator(
+        task_id='cleanup_temp_file',
+        python_callable=cleanup_temp_file,
+        provide_context=True,
+        trigger_rule='all_success',  # Run even if previous tasks succeeded
+        dag=dag
+    )
 
     # Define task dependencies
-    extract_data
+    extract_data >> ingest_to_druid >> log_completion >> cleanup_task
