@@ -9,14 +9,14 @@
             },
             "dimensionsSpec": {
                 "dimensions": [
-                    "load_datetime",
+                    "sat_employee_hk",
                     "hub_employee_hk",
+                    "load_datetime",
                     "record_source",
                     "hash_diff",
                     "employee_account",
                     "employee_name",
                     "employee_email",
-                    "sat_employee_hk",
                     "employee_location"
                 ]
             },
