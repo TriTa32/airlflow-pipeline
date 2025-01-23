@@ -20,40 +20,22 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../spec_file'))
-print(SPEC_PATH)
+
 def extract_data_from_postgres(**context):
     pg_hook = PostgresHook(postgres_conn_id='postgres_default')
     
-    sql_query = """
-        SELECT 
-            *
-        FROM public.sat_employee;
-    """
+    sql_query = """SELECT * FROM public.sat_employee;"""
     
-    try:
-        df = pg_hook.get_pandas_df(sql_query)
-        
-        df['load_datetime'] = pd.to_datetime(df['load_datetime'])
-        
-        # Save to temporary file for Druid ingestion
-        temp_file = f"/tmp/employees_data_{context['execution_date'].strftime('%Y%m%d')}.json"
-        
-        # Convert DataFrame to Druid-compatible JSON format
-        records = df.to_dict('records')
-        with open(temp_file, 'w') as f:
-            for record in records:
-                record['load_datetime'] = record['load_datetime'].isoformat()
-                f.write(json.dumps(record) + '\n')
-        
-        # Store the file path and record count in XCom
-        context['task_instance'].xcom_push(key='data_file', value=temp_file)
-        context['task_instance'].xcom_push(key='record_count', value=len(df))
-        
-        return temp_file
-        
-    except Exception as e:
-        logging.error(f"Error extracting data from PostgreSQL: {str(e)}")
-        raise
+    df = pg_hook.get_pandas_df(sql_query)
+    df['load_datetime'] = pd.to_datetime(df['load_datetime']).dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    
+    # Convert records to JSON strings
+    records_json = [json.dumps(record) for record in df.to_dict('records')]
+    
+    # Push JSON records to XCom
+    context['task_instance'].xcom_push(key='employee_records_json', value=records_json)
+    
+    return records_json
 
 def cleanup_temp_file(**context):
     """Remove temporary JSON file after Druid ingestion"""
@@ -93,7 +75,11 @@ with DAG(
         task_id='ingest_to_druid',
         json_index_file='sat_employee_index.json',
         druid_ingest_conn_id='druid_default',
-        max_ingestion_time=3600,  # Maximum time to wait for ingestion (in seconds)
+        max_ingestion_time=3600,
+        params=dict(
+            DATA_SOURCE='sat_employee',
+            INLINE_DATA="{{ task_instance.xcom_pull(key='employee_records_json', task_ids='extract_data') | join('\n') }}"
+        )
     )
 
     log_completion = PythonOperator(
