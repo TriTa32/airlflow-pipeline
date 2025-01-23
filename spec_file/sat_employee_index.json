@@ -2,40 +2,40 @@
     "type": "index_parallel",
     "spec": {
         "dataSchema": {
-            "dataSource": "sat_employee",
+            "dataSource": "{{ params.DATA_SOURCE }}",
             "timestampSpec": {
                 "column": "load_datetime",
                 "format": "iso"
             },
             "dimensionsSpec": {
                 "dimensions": [
-                    "sat_employee_hk",
-                    "hub_employee_hk",
-                    "load_datetime",
-                    "record_source",
-                    "hash_diff",
-                    "employee_account",
-                    "employee_name",
-                    "employee_email",
-                    "employee_location"
+                    {"type": "string", "name": "load_datetime"},
+                    {"type": "string", "name": "hub_employee_hk"},
+                    {"type": "string", "name": "record_source"},
+                    {"type": "string", "name": "hash_diff"},
+                    {"type": "string", "name": "employee_account"},
+                    {"type": "string", "name": "employee_name"},
+                    {"type": "string", "name": "employee_email"},
+                    {"type": "string", "name": "sat_employee_hk"},
+                    {"type": "string", "name": "employee_location"}
                 ]
             },
             "granularitySpec": {
                 "type": "uniform",
                 "segmentGranularity": "DAY",
                 "queryGranularity": "HOUR",
-                "rollup": true
+                "rollup": false
             }
         },
         "ioConfig": {
             "type": "index_parallel",
             "inputSource": {
-                "type": "local",
-                "baseDir": "/tmp",
-                "filter": "employees_data_*.json"
+                "type": "inline",
+                "data": "{{ params.INLINE_DATA }}"
             },
             "inputFormat": {
-                "type": "json"
+                "type": "json",
+                "keepNullColumns": false
             }
         },
         "tuningConfig": {
