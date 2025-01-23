@@ -81,7 +81,7 @@ def log_ingestion_status(**context):
     return True
 
 with DAG(
-        'postgres_to_druid_pipeline',
+        dag_id='postgres_to_druid_pipeline',
         default_args=default_args,
         description='Extract data from PostgreSQL and ingest into Druid using DruidOperator',
         schedule_interval='@daily', 
