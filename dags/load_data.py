@@ -4,7 +4,6 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
 from airflow.providers.apache.druid.operators.druid import DruidOperator
-from airflow.models import Variable
 import pandas as pd
 import logging
 import json
@@ -105,13 +104,13 @@ with DAG(
         dag=dag
     )
 
-    # cleanup_task = PythonOperator(
-    #     task_id='cleanup_temp_file',
-    #     python_callable=cleanup_temp_file,
-    #     provide_context=True,
-    #     trigger_rule='all_success',  # Run even if previous tasks succeeded
-    #     dag=dag
-    # )
+    cleanup_task = PythonOperator(
+        task_id='cleanup_temp_file',
+        python_callable=cleanup_temp_file,
+        provide_context=True,
+        trigger_rule='all_success',  # Run even if previous tasks succeeded
+        dag=dag
+    )
 
     # Define task dependencies
-    extract_data >> ingest_to_druid >> log_completion
+    extract_data >> ingest_to_druid >> log_completion >> cleanup_task
