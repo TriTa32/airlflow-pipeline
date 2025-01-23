@@ -27,8 +27,8 @@ def extract_data_from_postgres(**context):
     
     sql_query = """
         SELECT 
-           *
-        FROM sat_employee
+            *
+        FROM public.sat_employee;
     """
     
     try:
@@ -82,6 +82,8 @@ with DAG(
         description='Extract data from PostgreSQL and ingest into Druid using DruidOperator',
         schedule_interval=None, 
         catchup=False,
+        tags=["postgres", "druid"],
+
         # template_searchpath=[SPEC_PATH]
     ) as dag:
 
