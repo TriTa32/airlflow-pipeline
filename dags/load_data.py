@@ -21,61 +21,46 @@ default_args = {
 }
 SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../spec_file'))
 
-# Task to extract data from PostgreSQL
 def extract_data_from_postgres(**context):
     table_name = "sat_employee"
     pg_hook = PostgresHook(postgres_conn_id='postgres_default')
     
     sql_query = f"SELECT * FROM public.{table_name};"
-    logging.info(f"Executing query: {sql_query}")
-    
-    try:
-        df = pg_hook.get_pandas_df(sql_query)
-        logging.info(f"Data fetched from table {table_name}: {df.head()}")  # Log the first few rows
-    except Exception as e:
-        logging.error(f"Error fetching data from PostgreSQL: {str(e)}")
-        raise
+    df = pg_hook.get_pandas_df(sql_query)
     
     # Ensure `load_datetime` is in ISO 8601 format
-    try:
-        df['load_datetime'] = pd.to_datetime(df['load_datetime']).dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        logging.info("Converted `load_datetime` to ISO 8601 format")
-    except Exception as e:
-        logging.error(f"Error processing `load_datetime`: {str(e)}")
-        raise
-
+    df['load_datetime'] = pd.to_datetime(df['load_datetime']).dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    
     # Convert the DataFrame to a JSON array string
-    try:
-        records_json = df.to_dict(orient='records')  # List of dicts
-        records_json_str = json.dumps(records_json)  # JSON array as a string
-        logging.info(f"Prepared JSON data: {records_json_str[:500]}...")  # Log only the first 500 characters
-    except Exception as e:
-        logging.error(f"Error converting data to JSON: {str(e)}")
-        raise
+    records_json = df.to_dict(orient='records')  # List of dicts
+    records_json_str = json.dumps(records_json)  # JSON array as a string
 
     # Push the JSON array string to XCom
-    context['task_instance'].xcom_push(key=f'{table_name}_records_json', value=records_json_str)
+    context['task_instance'].xcom_push(key='sat_employee_records_json', value=records_json_str)
+    records_json = context['task_instance'].xcom_pull(key='sat_employee_records_json')
+
+    logging.info(f"JSON Data for Ingestion: {records_json}")
     return records_json_str
 
-# Task to log ingestion status
 def log_ingestion_status(**context):
+    """Log the status of data ingestion"""
     table_name = "sat_employee"
     records_json_str = context['task_instance'].xcom_pull(key=f'{table_name}_records_json')
-    
-    if not records_json_str:
-        logging.error(f"No records found in XCom for table: {table_name}")
-        return False
-    
-    try:
-        record_count = len(json.loads(records_json_str))  # Count number of records in the JSON array
-        logging.info(f"Completed ingestion of {record_count} records into Druid for table: {table_name}")
-    except Exception as e:
-        logging.error(f"Error reading JSON data from XCom: {str(e)}")
-        raise
-    
+    record_count = len(json.loads(records_json_str))  # Count number of records in the JSON array
+    logging.info(f"Completed ingestion of {record_count} records into Druid for table: {table_name}")
     return True
 
-# DAG Definition
+def log_inline_data(**context):
+        # Retrieve INLINE_DATA
+        inline_data = context['task_instance'].xcom_pull(key='sat_employee_records_json')
+        
+        # Log it
+        if inline_data:
+            logging.info(f"INLINE_DATA to be passed to Druid: {inline_data[:500]}...")  # Log first 500 chars for brevity
+        else:
+            logging.error("INLINE_DATA is empty or not found.")
+            raise ValueError("No INLINE_DATA found to pass to Druid.")
+
 with DAG(
         dag_id='postgres_to_druid_sat_employee',
         default_args=default_args,
@@ -86,13 +71,16 @@ with DAG(
         template_searchpath=[SPEC_PATH]
     ) as dag:
 
-    # Extract data task
     extract_data = PythonOperator(
         task_id='extract_data_sat_employee',
         python_callable=extract_data_from_postgres,
     )
+   
+    log_inline_data_task = PythonOperator(
+        task_id='log_inline_data',
+        python_callable=log_inline_data,
+    )
 
-    # Ingest data into Druid
     ingest_to_druid = DruidOperator(
         task_id='ingest_to_druid_sat_employee',
         json_index_file='sat_employee_index.json',
@@ -104,11 +92,10 @@ with DAG(
         )
     )
 
-    # Log completion task
     log_completion = PythonOperator(
         task_id='log_completion_sat_employee',
         python_callable=log_ingestion_status,
     )
 
     # Task dependencies
-    extract_data >> ingest_to_druid >> log_completion
+    extract_data >> log_inline_data_task >> ingest_to_druid >> log_completion
