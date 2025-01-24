@@ -51,15 +51,16 @@ def log_ingestion_status(**context):
     return True
 
 def log_inline_data(**context):
-        # Retrieve INLINE_DATA
-        inline_data = context['task_instance'].xcom_pull(key='sat_employee_records_json')
-        
-        # Log it
-        if inline_data:
-            logging.info(f"INLINE_DATA to be passed to Druid: {inline_data[:500]}...")  # Log first 500 chars for brevity
-        else:
-            logging.error("INLINE_DATA is empty or not found.")
-            raise ValueError("No INLINE_DATA found to pass to Druid.")
+    # Retrieve INLINE_DATA from XCom
+    task_instance = context['task_instance']
+    inline_data = task_instance.xcom_pull(key='sat_employee_records_json')
+    
+    # Log the INLINE_DATA
+    if inline_data:
+        logging.info(f"INLINE_DATA retrieved from XCom (first 500 chars): {inline_data[:500]}...")
+    else:
+        logging.error("INLINE_DATA is empty or missing. Check the upstream task for issues.")
+        raise ValueError("No INLINE_DATA found to pass to Druid.")
 
 with DAG(
         dag_id='postgres_to_druid_sat_employee',
