@@ -36,8 +36,8 @@ def extract_data_from_postgres(**context):
     records_json_str = json.dumps(records_json)  # JSON array as a string
 
     # Push the JSON array string to XCom
-    context['task_instance'].xcom_push(key='sat_employee_records_json', value=records_json_str)
-    
+    records_json = context['task_instance'].xcom_push(key='sat_employee_records_json', value=records_json_str)
+    logging.info(f"JSON Data for Ingestion: {records_json}")
     return records_json_str
 
 def log_ingestion_status(**context):
