@@ -5,7 +5,7 @@
             "dataSource": "{{ params.DATA_SOURCE }}",
             "timestampSpec": {
                 "column": "load_datetime",
-                "format": "iso"
+                "format": "auto"
             },
             "dimensionsSpec": {
                 "dimensions": [
@@ -62,8 +62,9 @@
             "granularitySpec": {
                 "type": "uniform",
                 "segmentGranularity": "DAY",
-                "queryGranularity": "HOUR",
-                "rollup": false
+                "queryGranularity": "NONE",
+                "rollup": false,
+                "intervals": null
             }
         },
         "ioConfig": {
@@ -73,15 +74,16 @@
                 "data": "{{ params.INLINE_DATA }}"
             },
             "inputFormat": {
-                "type": "json",
-                "keepNullColumns": false
+                "type": "json"
             }
         },
         "tuningConfig": {
             "type": "index_parallel",
             "partitionsSpec": {
-                "type": "dynamic"
-            }
+                "type": "dynamic",
+                "maxRowsPerSegment": 5000000
+            },
+            "maxRowsInMemory": 1000000
         }
     }
 }
