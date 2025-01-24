@@ -4,6 +4,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
 from airflow.providers.apache.druid.operators.druid import DruidOperator
+from airflow.models import Variable
 import pandas as pd
 import logging
 import json
@@ -20,7 +21,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../spec_file'))
-
+global records_json_str
 def extract_data_from_postgres(**context):
     table_name = "sat_employee"
     pg_hook = PostgresHook(postgres_conn_id='postgres_default')
@@ -34,6 +35,7 @@ def extract_data_from_postgres(**context):
     # Convert the DataFrame to a JSON array string
     records_json = df.to_dict(orient='records')  # List of dicts
     records_json_str = json.dumps(records_json)  # JSON array as a string
+    Variable.set('sat_employee_inline_data', records_json_str)
 
     # Push the JSON array string to XCom
     context['task_instance'].xcom_push(key='sat_employee_records_json', value=records_json_str)
@@ -88,8 +90,8 @@ with DAG(
         druid_ingest_conn_id='druid_default',
         max_ingestion_time=3600,
         params=dict(
-            DATA_SOURCE='sat_employee',  # Dynamic data source
-            INLINE_DATA="{{ task_instance.xcom_pull(key='sat_employee_records_json') }}"
+            DATA_SOURCE='sat_employee',
+            INLINE_DATA="{{ var.value.sat_employee_inline_data }}"
         )
     )
 

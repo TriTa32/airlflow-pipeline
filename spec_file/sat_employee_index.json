@@ -9,15 +9,54 @@
             },
             "dimensionsSpec": {
                 "dimensions": [
-                    {"type": "string", "name": "load_datetime"},
-                    {"type": "string", "name": "hub_employee_hk"},
-                    {"type": "string", "name": "record_source"},
-                    {"type": "string", "name": "hash_diff"},
-                    {"type": "string", "name": "employee_account"},
-                    {"type": "string", "name": "employee_name"},
-                    {"type": "string", "name": "employee_email"},
-                    {"type": "string", "name": "sat_employee_hk"},
-                    {"type": "string", "name": "employee_location"}
+                    {
+                        "type": "string",
+                        "name": "sat_employee_hk",
+                        "multiValueHandling": "SORTED_ARRAY",
+                        "createBitmapIndex": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "hub_employee_hk",
+                        "multiValueHandling": "SORTED_ARRAY",
+                        "createBitmapIndex": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "record_source",
+                        "multiValueHandling": "SORTED_ARRAY",
+                        "createBitmapIndex": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "hash_diff",
+                        "multiValueHandling": "SORTED_ARRAY",
+                        "createBitmapIndex": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "employee_account",
+                        "multiValueHandling": "SORTED_ARRAY",
+                        "createBitmapIndex": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "employee_name",
+                        "multiValueHandling": "SORTED_ARRAY",
+                        "createBitmapIndex": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "employee_email",
+                        "multiValueHandling": "SORTED_ARRAY",
+                        "createBitmapIndex": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "employee_location",
+                        "multiValueHandling": "SORTED_ARRAY",
+                        "createBitmapIndex": true
+                    }
                 ]
             },
             "granularitySpec": {
