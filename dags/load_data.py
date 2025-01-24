@@ -21,28 +21,26 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../spec_file'))
-global records_json_str
 def extract_data_from_postgres(**context):
     table_name = "sat_employee"
     pg_hook = PostgresHook(postgres_conn_id='postgres_default')
-    
+
+    # Query the data
     sql_query = f"SELECT * FROM public.{table_name};"
     df = pg_hook.get_pandas_df(sql_query)
-    
+
     # Ensure `load_datetime` is in ISO 8601 format
     df['load_datetime'] = pd.to_datetime(df['load_datetime']).dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-    
-    # Convert the DataFrame to a JSON array string
-    records_json = df.to_dict(orient='records')  # List of dicts
-    records_json_str = json.dumps(records_json)  # JSON array as a string
-    Variable.set('sat_employee_inline_data', records_json_str)
 
-    # Push the JSON array string to XCom
-    context['task_instance'].xcom_push(key='sat_employee_records_json', value=records_json_str)
-    records_json = context['task_instance'].xcom_pull(key='sat_employee_records_json')
+    # Convert the DataFrame to NDJSON
+    ndjson_data = df.to_json(orient='records', lines=True)
 
-    logging.info(f"JSON Data for Ingestion: {records_json}")
-    return records_json_str
+    # Log and push the NDJSON to XCom
+    logging.info(f"NDJSON Data for Ingestion (first 500 chars): {ndjson_data[:500]}")
+    context['task_instance'].xcom_push(key='sat_employee_records_json', value=ndjson_data)
+
+    return ndjson_data
+
 
 def log_ingestion_status(**context):
     """Log the status of data ingestion"""
