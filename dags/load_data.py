@@ -100,7 +100,7 @@ with DAG(
         max_ingestion_time=3600,
         params={
             'DATA_SOURCE': 'sat_employee',
-            'INLINE_DATA': "{{ task_instance.xcom_pull(key='sat_employee_records_json') | tojson }}"
+            'INLINE_DATA': "{{ task_instance.xcom_pull(key='sat_employee_records_json') }}"
         }
     )
 
