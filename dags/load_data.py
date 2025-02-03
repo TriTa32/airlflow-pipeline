@@ -19,7 +19,7 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(minutes=5)
 }
-SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../spec_file'))
 def extract_data_from_postgres(**context):
     table_name = "sat_employee"
     pg_hook = PostgresHook(postgres_conn_id='postgres_default')
@@ -80,7 +80,7 @@ with DAG(
 
     ingest_to_druid = DruidOperator(
         task_id='ingest_to_druid_sat_employee',
-        json_index_file='sat_employee_schema.json',
+        json_index_file='sat_employee_index.json',
         druid_ingest_conn_id='druid_default',
         max_ingestion_time=3600,
         params={
