@@ -85,10 +85,10 @@ with DAG(
         max_ingestion_time=3600,
         params={
             'DATA_SOURCE': 'sat_employee',
-            'INLINE_DATA': '{{ task_instance.xcom_pull(task_ids="extract_data_sat_employee") }}'
+            'INLINE_DATA': "{{ task_instance.xcom_pull(key='sat_employee_records_json') }}"
         }
     )
-
+    
     log_completion = PythonOperator(
         task_id='log_completion_sat_employee',
         python_callable=log_ingestion_status,
