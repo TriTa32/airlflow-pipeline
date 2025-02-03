@@ -101,7 +101,7 @@ with DAG(
 
     ingest_to_druid = DruidOperator(
         task_id="ingest_to_druid",
-        json_index_file=json.dumps(ingestion_spec),
+        json_index_file=ingestion_spec,
         druid_ingest_conn_id="druid_default",
     )
 
