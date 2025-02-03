@@ -19,7 +19,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 
-SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../spec_file'))
 
 def extract_data_from_postgres(**context):
     try:
@@ -100,7 +100,7 @@ with DAG(
         max_ingestion_time=3600,
         params={
             'DATA_SOURCE': 'sat_employee',
-            'INLINE_DATA': "{{ task_instance.xcom_pull(key='sat_employee_records_json') }}"
+            'INLINE_DATA': "{{ task_instance.xcom_pull(key='sat_employee_records_json') | tojson }}"
         }
     )
 
