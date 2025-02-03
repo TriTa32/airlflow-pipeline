@@ -74,7 +74,11 @@
                 "data": "{{ params.INLINE_DATA }}"
             },
             "inputFormat": {
-                "type": "json"
+                "type": "json",
+                "flattenSpec": {
+                    "useFieldDiscovery": true,
+                    "fields": []
+                }
             }
         },
         "tuningConfig": {

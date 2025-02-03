@@ -23,23 +23,20 @@ SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 def extract_data_from_postgres(**context):
     table_name = "sat_employee"
     pg_hook = PostgresHook(postgres_conn_id='postgres_default')
-
-    # Query the data
+    
     sql_query = f"SELECT * FROM public.{table_name};"
     df = pg_hook.get_pandas_df(sql_query)
-
-    # Ensure `load_datetime` is in ISO 8601 format
+    
+    # Format datetime
     df['load_datetime'] = pd.to_datetime(df['load_datetime']).dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-
-    # Convert the DataFrame to NDJSON
-    ndjson_data = df.to_json(orient='records', lines=True)
-
-    # Log and push the NDJSON to XCom
-    logging.info(f"NDJSON Data for Ingestion (first 500 chars): {ndjson_data[:500]}")
-    context['task_instance'].xcom_push(key='sat_employee_records_json', value=ndjson_data)
-
-    return ndjson_data
-
+    
+    # Convert to JSON string - use regular JSON instead of NDJSON
+    json_data = df.to_json(orient='records')  # Remove lines=True
+    
+    logging.info(f"JSON Data for Ingestion (first 500 chars): {json_data[:500]}")
+    context['task_instance'].xcom_push(key='sat_employee_records_json', value=json_data)
+    
+    return json_data
 
 def log_ingestion_status(**context):
     """Log the status of data ingestion"""
@@ -86,10 +83,10 @@ with DAG(
         json_index_file='sat_employee_schema.json',
         druid_ingest_conn_id='druid_default',
         max_ingestion_time=3600,
-        # params=dict(
-        #     DATA_SOURCE='sat_employee',
-        #     INLINE_DATA="{{ task_instance.xcom_pull(key='sat_employee_records_json') }}"
-        # )
+        params={
+            'DATA_SOURCE': 'sat_employee',
+            'INLINE_DATA': '{{ task_instance.xcom_pull(task_ids="extract_data_sat_employee") }}'
+        }
     )
 
     log_completion = PythonOperator(
