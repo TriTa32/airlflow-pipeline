@@ -142,19 +142,19 @@ with DAG(
             raise ValueError("No data found in XCom for ingestion")
         return get_ingestion_spec(inline_data)
 
-    ingest_to_druid = DruidOperator(
-        task_id="ingest_to_druid_sat_employee",
-        json_index_file="{{ task_instance.xcom_pull(task_ids='prepare_druid_spec') }}",
-        druid_ingest_conn_id="druid_default",
-        max_ingestion_time=3600,
-    )
-
     prepare_druid_spec = PythonOperator(
         task_id="prepare_druid_spec",
         python_callable=prepare_druid_ingestion,
         provide_context=True,
     )
 
+    ingest_to_druid = DruidOperator(
+        task_id="ingest_to_druid_sat_employee",
+        json_index_file="{{ task_instance.xcom_pull(task_ids='prepare_druid_spec') }}",
+        druid_ingest_conn_id="druid_default",
+        max_ingestion_time=3600,
+    )
+    
     log_completion = PythonOperator(
         task_id="log_completion_sat_employee",
         python_callable=log_ingestion_status,
