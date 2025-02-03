@@ -6,10 +6,14 @@ from datetime import datetime, timedelta
 import pandas as pd
 import json
 import os
+import logging
 
-# Set data directory
+# Set data directory and file path
 DATA_DIR = "/tmp/druid_ingestion/"
-DATA_FILE = f"{DATA_DIR}sat_employee.json"
+DATA_FILE = os.path.join(DATA_DIR, "sat_employee.json")
+
+# Ensure directory exists
+os.makedirs(DATA_DIR, exist_ok=True)
 
 # Default arguments
 default_args = {
@@ -20,11 +24,8 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
-# Ensure directory exists
-os.makedirs(DATA_DIR, exist_ok=True)
-
 # Function to extract PostgreSQL data and save as JSON
-def extract_data_and_save(**context):
+def extract_data_and_save():
     try:
         table_name = "sat_employee"
         pg_hook = PostgresHook(postgres_conn_id="postgres_default")
@@ -38,17 +39,16 @@ def extract_data_and_save(**context):
         # Format datetime properly
         df["load_datetime"] = pd.to_datetime(df["load_datetime"]).dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-        # Convert to JSON and save
-        df.to_json(DATA_FILE, orient="records", lines=True)  # Druid expects newline-delimited JSON
+        # Convert to JSON and save (newline-delimited JSON format for Druid)
+        df.to_json(DATA_FILE, orient="records", lines=True)
 
-        # Log saved file
         logging.info(f"Data saved to {DATA_FILE}, total records: {len(df)}")
 
     except Exception as e:
         logging.error(f"Error in extract_data_and_save: {str(e)}")
         raise
 
-# Define ingestion spec
+# Define ingestion spec (static)
 ingestion_spec = {
     "type": "index_parallel",
     "spec": {
@@ -79,7 +79,7 @@ ingestion_spec = {
             "inputSource": {
                 "type": "local",
                 "baseDir": DATA_DIR,
-                "filter": "*.json",
+                "filter": "sat_employee.json",
             },
             "inputFormat": {"type": "json"},
         },
@@ -104,9 +104,8 @@ with DAG(
 
     ingest_to_druid = DruidOperator(
         task_id="ingest_to_druid",
-        json_index_file=json.dumps(ingestion_spec),  # Pass spec as JSON string
-        method="POST",
-        endpoint="druid/indexer/v1/task",
+        json_index_file=json.dumps(ingestion_spec),  # Pass JSON directly
+        druid_ingest_conn_id="druid_default",
     )
 
     # Define task dependency
