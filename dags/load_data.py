@@ -23,8 +23,7 @@ default_args = {
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
 }
-
-# Function to extract PostgreSQL data and save as JSON
+data = {}
 def extract_data_and_save():
     try:
         table_name = "sat_employee"
@@ -39,16 +38,15 @@ def extract_data_and_save():
         # Format datetime properly
         df["load_datetime"] = pd.to_datetime(df["load_datetime"]).dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-        # Convert to JSON and save (newline-delimited JSON format for Druid)
+        # Convert to JSON and save (newline-delimited JSON format)
         df.to_json(DATA_FILE, orient="records", lines=True)
-
+        data = df
         logging.info(f"Data saved to {DATA_FILE}, total records: {len(df)}")
 
     except Exception as e:
         logging.error(f"Error in extract_data_and_save: {str(e)}")
         raise
 
-# Define ingestion spec (static)
 ingestion_spec = {
     "type": "index_parallel",
     "spec": {
@@ -77,9 +75,8 @@ ingestion_spec = {
         "ioConfig": {
             "type": "index_parallel",
             "inputSource": {
-                "type": "local",
-                "baseDir": DATA_DIR,
-                "filter": "sat_employee.json",
+                "type": "inline",
+                "data": data
             },
             "inputFormat": {"type": "json"},
         },
@@ -104,7 +101,7 @@ with DAG(
 
     ingest_to_druid = DruidOperator(
         task_id="ingest_to_druid",
-        json_index_file=json.dumps(ingestion_spec),  # Pass JSON directly
+        json_index_file=json.dumps(ingestion_spec),
         druid_ingest_conn_id="druid_default",
     )
 
