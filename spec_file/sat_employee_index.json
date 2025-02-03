@@ -5,7 +5,7 @@
             "dataSource": "{{ params.DATA_SOURCE }}",
             "timestampSpec": {
                 "column": "load_datetime",
-                "format": "auto"
+                "format": "iso"
             },
             "dimensionsSpec": {
                 "dimensions": [
@@ -87,7 +87,10 @@
                 "type": "dynamic",
                 "maxRowsPerSegment": 5000000
             },
-            "maxRowsInMemory": 1000000
+            "maxRowsInMemory": 1000000,
+            "maxRetry": 3,
+            "maxParseExceptions": 2147483647,
+            "maxSavedParseExceptions": 0
         }
     }
 }

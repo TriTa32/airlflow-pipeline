@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
 from airflow.providers.apache.druid.operators.druid import DruidOperator
@@ -19,44 +18,60 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(minutes=5)
 }
-SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../spec_file'))
+
+SPEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
 def extract_data_from_postgres(**context):
-    table_name = "sat_employee"
-    pg_hook = PostgresHook(postgres_conn_id='postgres_default')
-    
-    sql_query = f"SELECT * FROM public.{table_name};"
-    df = pg_hook.get_pandas_df(sql_query)
-    
-    # Format datetime
-    df['load_datetime'] = pd.to_datetime(df['load_datetime']).dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-    
-    # Convert to JSON string - use regular JSON instead of NDJSON
-    json_data = df.to_json(orient='records')  # Remove lines=True
-    
-    logging.info(f"JSON Data for Ingestion (first 500 chars): {json_data[:500]}")
-    context['task_instance'].xcom_push(key='sat_employee_records_json', value=json_data)
-    
-    return json_data
+    try:
+        table_name = "sat_employee"
+        pg_hook = PostgresHook(postgres_conn_id='postgres_default')
+        
+        sql_query = f"SELECT * FROM public.{table_name};"
+        df = pg_hook.get_pandas_df(sql_query)
+        
+        if df.empty:
+            raise ValueError(f"No data retrieved from {table_name}")
+        
+        # Format datetime
+        df['load_datetime'] = pd.to_datetime(df['load_datetime']).dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        
+        # Convert to JSON string
+        json_data = df.to_json(orient='records')
+        
+        # Log the actual data being pushed
+        logging.info(f"Pushing data to XCom (first 500 chars): {json_data[:500]}")
+        logging.info(f"Total records: {len(df)}")
+        
+        # Push to XCom
+        context['task_instance'].xcom_push(key='sat_employee_records_json', value=json_data)
+        
+        return json_data
+        
+    except Exception as e:
+        logging.error(f"Error in extract_data_from_postgres: {str(e)}")
+        raise
+
+def debug_xcom_data(**context):
+    data = context['task_instance'].xcom_pull(key='sat_employee_records_json')
+    logging.info(f"XCom data type: {type(data)}")
+    logging.info(f"XCom data preview: {data[:500]}")
+    try:
+        parsed = json.loads(data)
+        logging.info(f"Valid JSON with {len(parsed)} records")
+    except json.JSONDecodeError as e:
+        logging.error(f"Invalid JSON: {str(e)}")
+        raise
 
 def log_ingestion_status(**context):
     """Log the status of data ingestion"""
     table_name = "sat_employee"
-    records_json_str = context['task_instance'].xcom_pull(key=f'{table_name}_records_json')
-    record_count = len(json.loads(records_json_str))  # Count number of records in the JSON array
-    logging.info(f"Completed ingestion of {record_count} records into Druid for table: {table_name}")
-    return True
-
-def log_inline_data(**context):
-    # Retrieve INLINE_DATA from XCom
-    task_instance = context['task_instance']
-    inline_data = task_instance.xcom_pull(key='sat_employee_records_json')
-    
-    # Log the INLINE_DATA
-    if inline_data:
-        logging.info(f"INLINE_DATA retrieved from XCom (first 500 chars): {inline_data[:500]}...")
+    records_json_str = context['task_instance'].xcom_pull(key='sat_employee_records_json')
+    if records_json_str:
+        record_count = len(json.loads(records_json_str))
+        logging.info(f"Completed ingestion of {record_count} records into Druid for table: {table_name}")
     else:
-        logging.error("INLINE_DATA is empty or missing. Check the upstream task for issues.")
-        raise ValueError("No INLINE_DATA found to pass to Druid.")
+        logging.error("No data found in XCom")
+    return True
 
 with DAG(
         dag_id='postgres_to_druid_sat_employee',
@@ -73,26 +88,26 @@ with DAG(
         python_callable=extract_data_from_postgres,
     )
    
-    log_inline_data_task = PythonOperator(
-        task_id='log_inline_data',
-        python_callable=log_inline_data,
+    debug_task = PythonOperator(
+        task_id='debug_xcom_data',
+        python_callable=debug_xcom_data,
     )
 
     ingest_to_druid = DruidOperator(
         task_id='ingest_to_druid_sat_employee',
-        json_index_file='sat_employee_index.json',
+        json_index_file='sat_employee_schema.json',
         druid_ingest_conn_id='druid_default',
         max_ingestion_time=3600,
         params={
             'DATA_SOURCE': 'sat_employee',
-            'INLINE_DATA': "{{ task_instance.xcom_pull(key='sat_employee_records_json') }}"
+            'INLINE_DATA': "{{ task_instance.xcom_pull(key='sat_employee_records_json') | tojson }}"
         }
     )
-    
+
     log_completion = PythonOperator(
         task_id='log_completion_sat_employee',
         python_callable=log_ingestion_status,
     )
 
     # Task dependencies
-    extract_data >> log_inline_data_task >> ingest_to_druid >> log_completion
+    extract_data >> debug_task >> ingest_to_druid >> log_completion
