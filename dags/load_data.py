@@ -95,7 +95,7 @@ with DAG(
 
     ingest_to_druid = DruidOperator(
         task_id='ingest_to_druid_sat_employee',
-        json_index_file='sat_employee_schema.json',
+        json_index_file='sat_employee_index.json',
         druid_ingest_conn_id='druid_default',
         max_ingestion_time=3600,
         params={
