@@ -4,6 +4,7 @@ from airflow.providers.apache.druid.operators.druid import DruidOperator
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 import pandas as pd
+import json
 
 default_args = {
     'owner': 'airflow',
@@ -77,7 +78,8 @@ def extract_and_prepare_druid_spec(**context):
             }
         }
         
-        return ingestion_spec
+        # Return the specification as a JSON string
+        return json.dumps(ingestion_spec)
 
     except Exception as e:
         print(f"Error in extract_and_prepare_druid_spec: {str(e)}")
@@ -103,7 +105,7 @@ with DAG(
     # Ingest data to Druid
     ingest_to_druid = DruidOperator(
         task_id="ingest_to_druid",
-        json_index_file=prepare_ingestion.output,
+        json_index_file="{{ task_instance.xcom_pull(task_ids='prepare_data_and_spec') }}",
         druid_ingest_conn_id="druid_default",
     )
 
