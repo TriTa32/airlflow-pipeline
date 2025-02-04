@@ -33,7 +33,7 @@ def prepare_druid_spec(table_name, **context):
             "type": "index_parallel",
             "spec": {
                 "dataSchema": {
-                    "dataSource": table_name,
+                    "dataSource": table_name,  # Use table name as data source
                     "timestampSpec": {
                         "column": "load_datetime", 
                         "format": "iso"
@@ -74,7 +74,9 @@ def prepare_druid_spec(table_name, **context):
 def create_postgres_to_druid_dag(
     tables_to_ingest,
     dag_id='postgres_to_druid_dynamic_ingestion',
-    schedule_interval=None
+    schedule_interval=None,
+    max_active_tasks=4,  # Increase the number of active tasks
+    max_active_runs=2  # Limit the number of active DAG runs
 ):
     default_args = {
         'owner': 'airflow',
@@ -90,6 +92,8 @@ def create_postgres_to_druid_dag(
         description="Dynamic PostgreSQL to Druid ingestion",
         schedule_interval=schedule_interval,
         catchup=False,
+        concurrency=max_active_tasks,  # Set the overall DAG concurrency
+        max_active_runs=max_active_runs,
         tags=["postgres", "druid", "dynamic_ingest"]
     ) as dag:
         
@@ -99,7 +103,9 @@ def create_postgres_to_druid_dag(
                 task_id=f"prepare_{table}_spec",
                 python_callable=prepare_druid_spec,
                 op_kwargs={'table_name': table},
-                provide_context=True
+                provide_context=True,
+                pool='druid_pool',  # Assign tasks to a resource pool
+                priority_weight=2  # Assign a higher priority to this task
             )
 
             # Ingest data to Druid
@@ -107,6 +113,7 @@ def create_postgres_to_druid_dag(
                 task_id=f"ingest_{table}_to_druid",
                 json_index_file="{{ task_instance.xcom_pull(task_ids='prepare_" + table + "_spec') }}",
                 druid_ingest_conn_id="druid_default",
+                pool='druid_pool'  # Assign tasks to the same resource pool
             )
 
             # Define task dependency
@@ -117,9 +124,9 @@ def create_postgres_to_druid_dag(
 # List of tables to ingest
 tables = [
     'sat_employee', 
-    'link_employee_unit', 
-    'hub_employee',
-    'sat_employee_level'
+    'sat_customer', 
+    'sat_product',
+    # Add more tables here
 ]
 
 # Generate the DAG
