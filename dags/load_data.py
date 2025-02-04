@@ -6,25 +6,30 @@ from datetime import datetime, timedelta
 import pandas as pd
 import json
 
-def prepare_druid_spec(table_name, **context):
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2025, 1, 1),
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+def extract_and_prepare_druid_spec(**context):
     try:
-        # PostgreSQL connection
+        # Extract data from PostgreSQL
+        table_name = "sat_employee"
         pg_hook = PostgresHook(postgres_conn_id="postgres_default")
 
-        # Dynamic query for each table
+        # Execute query and fetch data
         sql_query = f"SELECT * FROM public.{table_name};"
         df = pg_hook.get_pandas_df(sql_query)
 
         if df.empty:
             raise ValueError(f"No data retrieved from {table_name}")
 
-        # Prepare table-specific dimensions
-        dimensions = list(df.columns)
+        # Ensure load_datetime is in ISO format
+        df['load_datetime'] = pd.to_datetime(df['load_datetime']).dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-        # Ensure timestamp is in ISO format (adjust column name as needed)
-        if 'load_datetime' in df.columns:
-            df['load_datetime'] = pd.to_datetime(df['load_datetime']).dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        
         # Convert DataFrame to newline-delimited JSON string
         inline_data = '\n'.join(df.to_json(orient='records', lines=True).splitlines())
 
@@ -33,13 +38,22 @@ def prepare_druid_spec(table_name, **context):
             "type": "index_parallel",
             "spec": {
                 "dataSchema": {
-                    "dataSource": table_name,
+                    "dataSource": "sat_employee",
                     "timestampSpec": {
                         "column": "load_datetime", 
                         "format": "iso"
                     },
                     "dimensionsSpec": {
-                        "dimensions": dimensions
+                        "dimensions": [
+                            "sat_employee_hk",
+                            "hub_employee_hk",
+                            "record_source",
+                            "hash_diff",
+                            "employee_account",
+                            "employee_name",
+                            "employee_email",
+                            "employee_location"
+                        ]
                     },
                     "granularitySpec": {
                         "type": "uniform",
@@ -68,63 +82,32 @@ def prepare_druid_spec(table_name, **context):
         return json.dumps(ingestion_spec)
 
     except Exception as e:
-        print(f"Error preparing spec for {table_name}: {str(e)}")
+        print(f"Error in extract_and_prepare_druid_spec: {str(e)}")
         raise
 
-def create_postgres_to_druid_dag(
-    tables_to_ingest,
-    dag_id='postgres_to_druid_dynamic_ingestion',
+# Define DAG
+with DAG(
+    dag_id="postgres_to_druid_inline_ingestion",
+    default_args=default_args,
+    description="Extract PostgreSQL data and ingest into Druid with inline data",
     schedule_interval=None,
-    max_active_tasks=4,
-    max_active_runs=2 
-):
-    default_args = {
-        'owner': 'airflow',
-        'depends_on_past': False,
-        'start_date': datetime(2025, 1, 1),
-        'retries': 1,
-        'retry_delay': timedelta(minutes=5),
-    }
+    catchup=False,
+    tags=["postgres", "druid"],
+) as dag:
+    
+    # Prepare data and ingestion specification
+    prepare_ingestion = PythonOperator(
+        task_id="prepare_data_and_spec",
+        python_callable=extract_and_prepare_druid_spec,
+        provide_context=True,
+    )
 
-    with DAG(
-        dag_id=dag_id,
-        default_args=default_args,
-        description="Dynamic PostgreSQL to Druid ingestion",
-        schedule_interval=schedule_interval,
-        catchup=False,
-        concurrency=max_active_tasks,
-        max_active_runs=max_active_runs,
-        tags=["postgres", "druid", "dynamic_ingest"]
-    ) as dag:
-        
-        for table in tables_to_ingest:
-            # Prepare data and ingestion specification
-            prepare_ingestion = PythonOperator(
-                task_id=f"prepare_{table}_spec",
-                python_callable=prepare_druid_spec,
-                op_kwargs={'table_name': table},
-                provide_context=True
-            )
+    # Ingest data to Druid
+    ingest_to_druid = DruidOperator(
+        task_id="ingest_to_druid",
+        json_index_file="{{ task_instance.xcom_pull(task_ids='prepare_data_and_spec') }}",
+        druid_ingest_conn_id="druid_default",
+    )
 
-            # Ingest data to Druid
-            ingest_to_druid = DruidOperator(
-                task_id=f"ingest_{table}_to_druid",
-                json_index_file="{{ task_instance.xcom_pull(task_ids='prepare_" + table + "_spec') }}",
-                druid_ingest_conn_id="druid_default",
-            )
-
-            # Define task dependency
-            prepare_ingestion >> ingest_to_druid
-
-    return dag
-
-# List of tables to ingest
-tables = [
-    'sat_employee', 
-    'link_employee_unit', 
-    'hub_employee',
-    'sat_employee_level'
-]
-
-# Generate the DAG
-globals()['postgres_to_druid_dynamic_dag'] = create_postgres_to_druid_dag(tables)
+    # Define task dependency
+    prepare_ingestion >> ingest_to_druid
